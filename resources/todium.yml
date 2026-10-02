@@ -1,0 +1,41 @@
+# Todium native vanilla feature configuration
+# Behavior packs are loaded from <server-data>/behavior_pack.
+
+redstone:
+  enabled: true
+
+behavior-packs:
+  enabled: true
+  folder: behavior_pack
+  items-and-blocks: true
+  entities: true
+  recipes: true
+  loot-tables: true
+  scripts: true
+  script-timeout-ms: 2000
+
+
+# Native NetherNet/WebRTC transport.
+# The gameplay/WebRTC UDP port and HTTP signaling TCP port use the same
+# server-port. UDP 7551 remains reserved for LAN discovery by Minecraft.
+nethernet:
+  enabled: true
+  signaling: true
+  endpoint-address: 0.0.0.0
+  # auto = same TCP port as server-port.
+  endpoint-port: auto
+  # auto = same UDP port as server-port for WebRTC ICE.
+  ice-port: auto
+  # Required when one UDP port is shared by multiple NetherNet clients.
+  ice-udp-mux: true
+  # Set false to disable LAN discovery and avoid binding UDP 7551.
+  discovery: false
+  discovery-port: 7551
+  network-id: auto
+  identity-domain: todium.local
+  infer-peer-candidates: true
+  # Optional public IPv4/IPv6 addresses to place in bundled WebRTC SDP answers.
+  # Leave empty to use the candidates gathered by ext-webrtc.
+  advertised-addresses: []
+  # Disabled because NetherNet ICE now owns the server UDP port.
+  raknet-fallback: false
