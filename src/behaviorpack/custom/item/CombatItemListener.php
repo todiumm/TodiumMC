@@ -29,10 +29,10 @@ final class CombatItemListener{
 	public static function register(Server $server) : void{
 		$listener = new self();
 		$manager = $server->getPluginManager();
-		$manager->registerEvent(EntityDamageByEntityEvent::class, function(EntityDamageByEntityEvent $event) use ($listener) : void{
+		$manager->registerNativeEvent(EntityDamageByEntityEvent::class, function(EntityDamageByEntityEvent $event) use ($listener) : void{
 			$listener->onAttack($event);
 		}, EventPriority::MONITOR);
-		$manager->registerEvent(PlayerMissSwingEvent::class, function(PlayerMissSwingEvent $event) use ($listener) : void{
+		$manager->registerNativeEvent(PlayerMissSwingEvent::class, function(PlayerMissSwingEvent $event) use ($listener) : void{
 			$listener->onMissSwing($event);
 		}, EventPriority::MONITOR);
 	}

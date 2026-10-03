@@ -32,6 +32,7 @@ use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\scheduler\AsyncPool;
 use pocketmine\world\format\io\GlobalBlockStateHandlers;
 use ReflectionClass;
+use function array_keys;
 use function array_map;
 use function array_values;
 use function count;
@@ -86,6 +87,13 @@ final class CustomBlockFactory{
 
 	public static function isRegistered(string $identifier) : bool{
 		return isset(self::$blocks[$identifier]);
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public static function getRegisteredIdentifiers() : array{
+		return array_keys(self::$blocks);
 	}
 
 	/**

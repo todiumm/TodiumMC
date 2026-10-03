@@ -10,7 +10,7 @@ use pocketmine\item\Item;
  * Internal bridge used when a native item class needs constructor state that
  * Customies' class-based registration API cannot pass to the constructor.
  *
- * The entry is consumed synchronously by CustomiesItemFactory::registerItem()
+ * The entry is consumed synchronously by CustomItemFactory::register()
  * and is always cleared by CustomItemFactory afterwards.
  */
 final class NativeCustomItemRegistry{

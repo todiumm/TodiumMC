@@ -94,8 +94,16 @@ final class CustomItemFactory{
 	/**
 	 * @return string[]
 	 */
-	public static function getIdentifiers() : array{
+	public static function getRegisteredIdentifiers() : array{
 		return array_keys(self::$entries);
+	}
+
+	/**
+	 * @return string[]
+	 * @deprecated use getRegisteredIdentifiers()
+	 */
+	public static function getIdentifiers() : array{
+		return self::getRegisteredIdentifiers();
 	}
 
 	/**

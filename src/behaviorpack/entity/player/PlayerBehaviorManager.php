@@ -48,16 +48,16 @@ final class PlayerBehaviorManager{
 		}
 		self::$server = $server;
 		$manager = $server->getPluginManager();
-		$manager->registerEvent(PlayerLoginEvent::class, function(PlayerLoginEvent $event) : void{
+		$manager->registerNativeEvent(PlayerLoginEvent::class, function(PlayerLoginEvent $event) : void{
 			self::open($event->getPlayer());
 		}, EventPriority::MONITOR);
-		$manager->registerEvent(PlayerJoinEvent::class, function(PlayerJoinEvent $event) : void{
+		$manager->registerNativeEvent(PlayerJoinEvent::class, function(PlayerJoinEvent $event) : void{
 			self::get($event->getPlayer())?->onJoin();
 		}, EventPriority::MONITOR);
-		$manager->registerEvent(PlayerQuitEvent::class, function(PlayerQuitEvent $event) : void{
+		$manager->registerNativeEvent(PlayerQuitEvent::class, function(PlayerQuitEvent $event) : void{
 			self::closePlayer($event->getPlayer());
 		}, EventPriority::MONITOR);
-		$manager->registerEvent(DataPacketSendEvent::class, function(DataPacketSendEvent $event) : void{
+		$manager->registerNativeEvent(DataPacketSendEvent::class, function(DataPacketSendEvent $event) : void{
 			foreach($event->getPackets() as $packet){
 				if(!$packet instanceof AddPlayerPacket){
 					continue;

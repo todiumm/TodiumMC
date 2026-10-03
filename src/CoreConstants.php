@@ -42,11 +42,3 @@ define('pocketmine\LOCALE_DATA_PATH', dirname(__DIR__) . '/resources/translation
 define('pocketmine\BEDROCK_BLOCK_UPGRADE_SCHEMA_PATH', dirname(__DIR__) . '/vendor/altayofficial/worldupgraderschemas/');
 define('pocketmine\BEDROCK_ITEM_UPGRADE_SCHEMA_PATH', dirname(__DIR__) . '/vendor/altayofficial/worldupgraderschemas/');
 define('pocketmine\COMPOSER_AUTOLOADER_PATH', dirname(__DIR__) . '/vendor/autoload.php');
-
-// Compatibility for plugins written against the older Customies API.
-// Todium provides the equivalent class natively under pocketmine\custom\item.
-require_once __DIR__ . '/custom/item/CreativeInventoryInfo.php';
-if(!class_exists('customiesdevs\customies\item\CreativeInventoryInfo', false)){
-	class_alias(\pocketmine\custom\item\CreativeInventoryInfo::class, 'customiesdevs\customies\item\CreativeInventoryInfo');
-}
-

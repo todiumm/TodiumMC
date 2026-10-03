@@ -34,7 +34,7 @@ final class PlayerInputTracker{
 		}
 		self::$registered = true;
 		$manager = $server->getPluginManager();
-		$manager->registerEvent(DataPacketReceiveEvent::class, function(DataPacketReceiveEvent $event) : void{
+		$manager->registerNativeEvent(DataPacketReceiveEvent::class, function(DataPacketReceiveEvent $event) : void{
 			$packet = $event->getPacket();
 			if(!$packet instanceof PlayerAuthInputPacket){
 				return;
@@ -52,7 +52,7 @@ final class PlayerInputTracker{
 				$packet->getYaw()
 			];
 		}, EventPriority::MONITOR, $server, true);
-		$manager->registerEvent(PlayerQuitEvent::class, function(PlayerQuitEvent $event) : void{
+		$manager->registerNativeEvent(PlayerQuitEvent::class, function(PlayerQuitEvent $event) : void{
 			unset(self::$inputs[$event->getPlayer()->getId()]);
 		}, EventPriority::MONITOR);
 	}

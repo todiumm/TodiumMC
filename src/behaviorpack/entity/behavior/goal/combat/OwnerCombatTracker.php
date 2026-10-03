@@ -29,7 +29,7 @@ final class OwnerCombatTracker{
 		}
 		self::$registered = true;
 		$manager = $server->getPluginManager();
-		$manager->registerEvent(EntityDamageByEntityEvent::class, function(EntityDamageByEntityEvent $event) : void{
+		$manager->registerNativeEvent(EntityDamageByEntityEvent::class, function(EntityDamageByEntityEvent $event) : void{
 			$damager = $event->getDamager();
 			if($damager === null){
 				return;
@@ -39,7 +39,7 @@ final class OwnerCombatTracker{
 			self::$lastAttacked[$damager->getId()] = [$victim->getId(), $tick];
 			self::$lastAttacker[$victim->getId()] = [$damager->getId(), $tick];
 		}, EventPriority::MONITOR, $server, false);
-		$manager->registerEvent(EntityDespawnEvent::class, function(EntityDespawnEvent $event) : void{
+		$manager->registerNativeEvent(EntityDespawnEvent::class, function(EntityDespawnEvent $event) : void{
 			$id = $event->getEntity()->getId();
 			unset(self::$lastAttacked[$id], self::$lastAttacker[$id]);
 		}, EventPriority::MONITOR);

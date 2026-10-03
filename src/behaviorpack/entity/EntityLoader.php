@@ -160,7 +160,7 @@ final class EntityLoader implements ContentLoader{
 
 		EntityDefinitionRegistry::register($identifier, $definition);
 		$class = $this->generateClass($identifier);
-		CustomiesEntityFactory::getInstance()->registerEntity($class, $identifier);
+		CustomEntityFactory::getInstance()->registerEntity($class, $identifier);
 		$this->classes[$identifier] = $class;
 
 		if(($definition["description"]["is_spawnable"] ?? false) === true){
