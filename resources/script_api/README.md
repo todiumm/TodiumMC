@@ -50,9 +50,37 @@ set to `"addon"`) so the client accepts it:
     { "type": "script", "language": "javascript", "entry": "scripts/main.js", "uuid": "...", "version": [1, 0, 0] }
   ],
   "metadata": { "product_type": "addon" },
-  "dependencies": [ { "module_name": "@minecraft/server", "version": "1.0.0" } ]
+  "dependencies": [ { "module_name": "@minecraft/server", "version": "1.12.0" } ]
 }
 ```
+
+## API versions
+
+Todium works out which `@minecraft/server` version a pack targets on its own, so there is
+nothing to register and no list of versions to keep in step with a new release. Two things are
+read when the pack is loaded, most authoritative first:
+
+1. the `@minecraft/server` entry in the pack's `dependencies`, which is how Bedrock itself pins
+   the version; then
+2. a version written into an import, as in `import { world } from "@minecraft/server@1.11.0"`.
+
+When a pack declares neither, it is treated as targeting the newest surface.
+
+```json
+"dependencies": [ { "module_name": "@minecraft/server", "version": "1.12.0" } ]
+```
+
+The detected version is reported in the log when the runtime starts:
+
+```
+Behaviour pack <uuid> targets @minecraft/server 1.12.0
+```
+
+The whole API surface is available to every pack whatever version it targets. A version is a
+statement of what a pack was written against, not a limit on what the server hands out, so an
+older pack still finds newer symbols instead of hitting a gap. A pack that asks for a version
+newer than the one Todium implements logs a warning and keeps running against the newest
+surface Todium has; nothing fails to load.
 
 ## Events
 

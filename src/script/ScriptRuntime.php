@@ -69,6 +69,7 @@ use function json_decode;
 use function json_encode;
 use function microtime;
 use function preg_replace;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 
@@ -166,7 +167,50 @@ final class ScriptRuntime{
 			$this->lastError = $this->engine->getLastError();
 			return;
 		}
+
+		$this->reportDetectedVersions($scriptPacks, $sources);
 		$this->server->getLogger()->info("Script API runtime started for " . count($scriptPacks) . " behaviour pack(s)");
+	}
+
+	/**
+	 * Detects the API version of each pack and logs it, so a pack that targets a version newer than Todium implements is
+	 * visible in the console rather than silently clamped.
+	 *
+	 * @param BehaviorPack[]        $scriptPacks
+	 * @param array<string, string> $sources
+	 */
+	private function reportDetectedVersions(array $scriptPacks, array $sources) : void{
+		foreach($scriptPacks as $pack){
+			$packId = $pack->getPackId();
+			$version = ApiVersionDetector::detect($pack->getManifestData(), self::sourcesOfPack($packId, $sources));
+			if($version === null){
+				continue;
+			}
+			if($version->isNewerThanSupported()){
+				$this->server->getLogger()->warning("Behaviour pack " . $packId . " targets @minecraft/server " . $version->toString() . ", newer than the " . ApiVersion::MAX_SUPPORTED . " surface Todium implements; scripts run against the newest surface Todium has");
+			}else{
+				$this->server->getLogger()->info("Behaviour pack " . $packId . " targets @minecraft/server " . $version->toString());
+			}
+		}
+	}
+
+	/**
+	 * Narrows the full source map to the files belonging to one pack. Source keys are "<pack id>/<path>", so the pack id
+	 * is the leading path segment.
+	 *
+	 * @param array<string, string> $sources
+	 *
+	 * @return list<string>
+	 */
+	private static function sourcesOfPack(string $packId, array $sources) : array{
+		$prefix = $packId . "/";
+		$own = [];
+		foreach(Utils::stringifyKeys($sources) as $path => $contents){
+			if(str_starts_with($path, $prefix)){
+				$own[] = $contents;
+			}
+		}
+		return $own;
 	}
 
 	/**

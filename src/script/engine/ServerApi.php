@@ -61,6 +61,10 @@ final class ServerApi{
 
 	/**
 	 * Builds the module namespace scripts import as "@minecraft/server".
+	 *
+	 * The whole surface is exposed whatever version a pack declares: the version says which API a pack was written
+	 * against, not which symbols the server withholds. A pack that asks for an older version therefore still finds
+	 * newer symbols instead of tripping over a hole in the namespace.
 	 */
 	public function createModule() : JsObject{
 		$module = new JsObject();

@@ -36,6 +36,7 @@ use function preg_replace;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
+use function strrpos;
 use function strlen;
 use function substr;
 use function trim;
@@ -67,8 +68,9 @@ final class ModuleLoader{
 	 * Loads a module by specifier, relative to the given importer path.
 	 */
 	public function load(string $specifier, string $importer = "") : JsObject{
-		if(isset($this->builtinModules[$specifier])){
-			return $this->builtinModules[$specifier];
+		[$name] = self::splitVersion($specifier);
+		if(isset($this->builtinModules[$name])){
+			return $this->builtinModules[$name];
 		}
 
 		$path = self::resolve($specifier, $importer);
@@ -205,6 +207,25 @@ final class ModuleLoader{
 			}
 		}
 		return $exports;
+	}
+
+	/**
+	 * Splits a specifier of the form "@minecraft/server@1.11.0" into its module name and requested version. Bedrock
+	 * normally pins the version through the manifest instead, but pack authors do write the suffix by hand and a
+	 * stray version should not turn into a missing module.
+	 *
+	 * @return array{string, string}
+	 */
+	public static function splitVersion(string $specifier) : array{
+		//relative and absolute paths may legitimately contain "@" in a file name, so only bare specifiers are split
+		if(str_starts_with($specifier, ".") || str_starts_with($specifier, "/")){
+			return [$specifier, ""];
+		}
+		$at = strrpos($specifier, "@");
+		if($at === false || $at === 0){
+			return [$specifier, ""];
+		}
+		return [substr($specifier, 0, $at), substr($specifier, $at + 1)];
 	}
 
 	/**
