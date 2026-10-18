@@ -1,0 +1,179 @@
+name: Draft release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New release version (e.g. 5.44.0)"
+        required: true
+        type: string
+
+env:
+  PHP_VERSION: "8.1"
+
+jobs:
+  draft:
+    name: Create GitHub draft release
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Generate bot token
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.ALTAY_BOT_APP_ID }}
+          private-key: ${{ secrets.ALTAY_BOT_PRIVATE_KEY }}
+
+      - name: Resolve bot identity
+        id: bot
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          echo "name=$APP_SLUG[bot]" >> $GITHUB_OUTPUT
+          echo "email=$(gh api "/users/$APP_SLUG%5Bbot%5D" --jq .id)+$APP_SLUG[bot]@users.noreply.github.com" >> $GITHUB_OUTPUT
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@2.32.0
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Validate version input
+        run: |
+          if [[ ! "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be in the form X.Y.Z"
+            exit 1
+          fi
+
+      - name: Bump version in VersionInfo
+        run: |
+          php -r '
+            $path = "src/VersionInfo.php";
+            $version = "${{ github.event.inputs.version }}";
+            $contents = file_get_contents($path);
+            $updated = preg_replace(
+              "/public const BASE_VERSION = \"[^\"]+\";/",
+              "public const BASE_VERSION = \"$version\";",
+              $contents,
+              1,
+              $count
+            );
+            if($count !== 1){
+              throw new RuntimeException("Failed to bump BASE_VERSION");
+            }
+            file_put_contents($path, $updated);
+          '
+
+      - name: Commit and push version bump
+        id: version-bump
+        run: |
+          git config user.name "${{ steps.bot.outputs.name }}"
+          git config user.email "${{ steps.bot.outputs.email }}"
+          git add src/VersionInfo.php
+          git commit -m "release: bump version to ${{ github.event.inputs.version }} [ci skip]"
+          git push origin HEAD:${{ github.ref_name }}
+          #everything below runs against this commit, not the one the workflow was dispatched at - Composer records it
+          #as the root package reference, so the phar has to be stamped with it too
+          echo SHA=$(git rev-parse HEAD) >> $GITHUB_OUTPUT
+
+      - name: Restore Composer package cache
+        uses: actions/cache@v4
+        with:
+          path: "~/.cache/composer"
+          key: "php-${{ env.PHP_VERSION }}-composer-release-${{ hashFiles('**/composer.json') }}"
+          restore-keys: "php-${{ env.PHP_VERSION }}-composer-release-"
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --ignore-platform-reqs
+
+      - name: Calculate build number
+        id: build-number
+        run: |
+          BUILD_NUMBER=$((2300+$GITHUB_RUN_NUMBER))
+          echo "Build number: $BUILD_NUMBER"
+          echo BUILD_NUMBER=$BUILD_NUMBER >> $GITHUB_OUTPUT
+
+      - name: Mark stable release build
+        run: |
+          php -r '
+            $path = "src/VersionInfo.php";
+            $contents = file_get_contents($path);
+            $updated = str_replace(
+              ["IS_DEVELOPMENT_BUILD = true;", "BUILD_CHANNEL = \"master\";"],
+              ["IS_DEVELOPMENT_BUILD = false;", "BUILD_CHANNEL = \"stable\";"],
+              $contents,
+              $replacements
+            );
+            if($replacements !== 2){
+              throw new RuntimeException("Failed to mark the build as a stable release");
+            }
+            file_put_contents($path, $updated);
+          '
+
+      - name: Build Altay.phar
+        run: php -dphar.readonly=0 build/server-phar.php --git ${{ steps.version-bump.outputs.SHA }} --build ${{ steps.build-number.outputs.BUILD_NUMBER }}
+
+      - name: Get Altay release version
+        id: get-version
+        run: |
+          VERSION=$(php build/dump-version-info.php base_version)
+          echo VERSION=$VERSION >> $GITHUB_OUTPUT
+          echo MAJOR_VERSION=$(php build/dump-version-info.php major_version) >> $GITHUB_OUTPUT
+          echo MCPE_VERSION=$(php build/dump-version-info.php mcpe_version) >> $GITHUB_OUTPUT
+          echo MCPE_DISPLAY_VERSION=$(php build/dump-version-info.php mcpe_display_version) >> $GITHUB_OUTPUT
+          echo CHANGELOG_FILE_NAME=$(php build/dump-version-info.php changelog_file_name) >> $GITHUB_OUTPUT
+          echo CHANGELOG_MD_HEADER=$(php build/dump-version-info.php changelog_md_header) >> $GITHUB_OUTPUT
+          echo PRERELEASE=$(php build/dump-version-info.php prerelease) >> $GITHUB_OUTPUT
+          echo TAG_NAME=$VERSION >> $GITHUB_OUTPUT
+
+      - name: Generate PHP binary download URL
+        id: php-binary-url
+        run: |
+          echo PHP_BINARY_URL="${{ github.server_url }}/altayofficial/PHP-Binaries/releases/tag/pm${{ steps.get-version.outputs.MAJOR_VERSION }}-php-${{ env.PHP_VERSION }}-latest" >> $GITHUB_OUTPUT
+
+      - name: Generate build info
+        run: |
+          php build/generate-build-info-json.php \
+            ${{ steps.version-bump.outputs.SHA }} \
+            ${{ steps.get-version.outputs.TAG_NAME }} \
+            ${{ github.repository }} \
+            ${{ steps.build-number.outputs.BUILD_NUMBER }} \
+            ${{ github.run_id }} \
+            ${{ steps.php-binary-url.outputs.PHP_BINARY_URL }} \
+            > build_info.json
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release_artifacts
+          path: |
+            ${{ github.workspace }}/Altay.phar
+            ${{ github.workspace }}/build_info.json
+
+      - name: Create draft release
+        uses: ncipollo/release-action@v1.15.0
+        id: create-draft
+        with:
+          artifacts: ${{ github.workspace }}/Altay.phar,${{ github.workspace }}/build_info.json
+          commit: ${{ github.ref_name }}
+          draft: true
+          prerelease: ${{ steps.get-version.outputs.PRERELEASE }}
+          name: Altay ${{ steps.get-version.outputs.VERSION }}
+          tag: ${{ steps.get-version.outputs.TAG_NAME }}
+          token: ${{ steps.app-token.outputs.token }}
+          body: |
+            **For Minecraft: Bedrock Edition ${{ steps.get-version.outputs.MCPE_VERSION }} (display version ${{ steps.get-version.outputs.MCPE_DISPLAY_VERSION }})**
+
+            Please see the [changelogs](${{ github.server_url }}/${{ github.repository }}/blob/${{ steps.get-version.outputs.VERSION }}/changelogs/${{ steps.get-version.outputs.CHANGELOG_FILE_NAME }}#${{ steps.get-version.outputs.CHANGELOG_MD_HEADER }}) for details.
+
+            :information_source: Download the recommended PHP binary [here](${{ steps.php-binary-url.outputs.PHP_BINARY_URL }}).
+
+            :warning: Found a bug? Report it on our [issue tracker](${{ github.server_url }}/${{ github.repository }}/issues). **We can't fix bugs if you don't report them.**

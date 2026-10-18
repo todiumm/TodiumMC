@@ -1,0 +1,35 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Todium Example Pack",
+    "description": "Example behaviour pack demonstrating the Todium Script API",
+    "uuid": "6f1a5d2c-1f3e-4a5b-9c7d-2b8e4f6a1d30",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "9c4b7e11-3a2d-4f8e-b1c6-7d5a9e2f4b81",
+      "version": [1, 0, 0]
+    },
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "2d8f6a33-5c1b-4e7a-8f92-1a3c5e7b9d02",
+      "entry": "scripts/main.js",
+      "version": [1, 0, 0]
+    }
+  ],
+  "metadata": {
+    "authors": ["Todium Team"],
+    "license": "LGPL-3.0-or-later",
+    "product_type": "addon"
+  },
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.0.0"
+    }
+  ]
+}

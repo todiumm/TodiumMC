@@ -1,0 +1,17 @@
+#This configuration file controls the behaviour packs loaded natively by Todium.
+
+#Choose whether players must download the behaviour packs below in order to join the server.
+#NOTE: This will do nothing if there are no behaviour packs in the stack below.
+force_packs: false
+
+behavior_stack:
+  #Behaviour packs here are applied from bottom to top, in the same way as resource packs.
+  #Entries may be either the filename of a .mcpack/.zip archive, or the name of a directory containing a manifest.json.
+  #A directory pack is convenient during development: its files are read straight from disk, and it is zipped
+  #automatically when the server sends it to a client.
+  #
+  #Script modules declared by these packs are executed server-side by Todium's native Script API runtime.
+  #See resources/script_api/README.md for the JavaScript API surface that is available to scripts.
+  #Example
+  # - MyBehaviorPack.mcpack
+  # - MyDevelopmentPack

@@ -1,0 +1,264 @@
+# Main configuration file for Altay
+# These settings are the ones that cannot be included in server.properties
+# Some of these settings are safe, others can break your server if modified incorrectly
+# New settings/defaults won't appear automatically in this file when upgrading.
+
+settings:
+  #Whether to send all strings translated to server locale or let the device handle them
+  force-language: false
+  shutdown-message: "Server closed"
+  #Allow listing plugins via Query
+  query-plugins: true
+  #Enable plugin and core profiling by default
+  enable-profiling: false
+  #Will only add results when tick measurement is below or equal to given value (default 20)
+  profile-report-trigger: 20
+  #Number of AsyncTask workers.
+  #Used for plugin asynchronous tasks, world generation, compression and web communication.
+  #Set this approximately to your number of cores.
+  #If set to auto, it'll try to detect the number of cores (or use 2)
+  async-workers: auto
+  #Whether to allow running development builds. Dev builds might crash, break your plugins, corrupt your world and more.
+  #It is recommended to avoid using development builds where possible.
+  enable-dev-builds: false
+
+memory:
+  #Global soft memory limit in megabytes. Set to 0 to disable
+  #This will trigger low-memory-triggers and fire an event to free memory when the usage goes over this
+  global-limit: 0
+
+  #Main thread soft memory limit in megabytes. Set to 0 to disable
+  #This will trigger low-memory-triggers and fire an event to free memory when the usage goes over this
+  main-limit: 0
+
+  #Main thread hard memory limit in megabytes. Set to 0 to disable
+  #This will stop the server when the limit is surpassed
+  main-hard-limit: 1024
+
+  #AsyncWorker threads' hard memory limit in megabytes. Set to 0 to disable
+  #This will crash the task currently executing on the worker if the task exceeds the limit
+  #NOTE: THIS LIMIT APPLIES PER WORKER, NOT TO THE WHOLE PROCESS.
+  async-worker-hard-limit: 256
+
+  #Period in ticks to check memory (default 1 second)
+  check-rate: 20
+
+  #Continue firing low-memory-triggers and event while on low memory
+  continuous-trigger: true
+
+  #Only if memory.continuous-trigger is enabled. Specifies the rate in memory.check-rate steps (default 30 seconds)
+  continuous-trigger-rate: 30
+
+  garbage-collection:
+    #Period in ticks to fire the garbage collector manually (default 30 minutes), set to 0 to disable
+    #This only affects the main thread. Other threads should fire their own collections
+    period: 36000
+
+  #Settings controlling memory dump handling.
+  memory-dump:
+    #Dump memory from async workers as well as the main thread. If you have issues with segfaults when dumping memory, disable this setting.
+    dump-async-worker: true
+
+  max-chunks:
+    #Cap maximum render distance per player when low memory is triggered. Set to 0 to disable cap.
+    chunk-radius: 4
+
+network:
+  # Network transport
+  # Options: raknet or nethernet
+  transport: raknet
+  #Settings for the NetherNet transport.
+  nethernet:
+    #Name shown to players the first time their client is asked to trust this server's identity.
+    #Leave empty to use the MOTD.
+    identity-domain: ""
+    #Reject connections that do not carry a signed identity assertion. That signature is what ties a
+    #connection to the account it logs in with, so "auto" requires it from players joining by address
+    #whenever xbox-auth is on, and never from players who found the server on the local network,
+    #where clients do not sign. true or false apply to both. If players cannot join, the debug log
+    #names every connection that arrived without one.
+    require-identity: auto
+    #STUN and TURN servers used to find a path to players who cannot be reached directly.
+    #Host candidates are enough on a local network, so this can be left empty there.
+    ice-servers: []
+    #Credentials for the TURN servers above, if they ask for any.
+    ice-username: ""
+    ice-password: ""
+    #Only accept relayed candidates, keeping the server address away from players. Needs a TURN server.
+    relay-only: false
+    #Local addresses to offer players a path on. Each one costs a socket per player, and a machine
+    #usually has several no player can reach, such as container bridges. Leave empty to use the
+    #address the server is bound to, or every address when it is bound to all of them.
+    interfaces: []
+    #How many connections may be in the middle of being set up at once, and how many of those a
+    #single address may hold. Each one costs a handshake before anyone has proved who they are, so
+    #these are what stops one peer from spending the server's time. Raise the per-address figure
+    #above the player count when everyone arrives through one address, such as behind a proxy.
+    max-pending-negotiations: 64
+    max-negotiations-per-address: 32
+    #Of the addresses gathered above, the ones players joining by address can actually reach. The
+    #others are kept out of the answer, so those players do not spend a connectivity check on each.
+    #Leave empty to offer every gathered address.
+    advertise-addresses: []
+    #TCP port the join endpoint listens on, which is where the Servers tab asks for the MOTD and
+    #posts its offer. Set to 0 to serve it on the server port.
+    signalling-port: 0
+    #UDP ports a player's media may use, written as "first-last" and at least 100 ports wide. Leave
+    #empty to let the system pick, which is fine until the ports have to be forwarded.
+    udp-port-range: ""
+    #Log what the ICE, DTLS and SCTP layers have to say about every connection, which is a line per
+    #datagram and only worth turning on while taking a failing connection apart. Needs debug level 2.
+    verbose-logging: false
+    #Certificate and private key to serve the join endpoint over HTTPS with, in PEM form. Clients
+    #open with a TLS handshake and fall back to plaintext when it is refused, so leaving these empty
+    #still works. Leave the key empty when the certificate file carries it.
+    tls-certificate: ""
+    tls-key: ""
+  #Threshold for batching packets, in bytes. Only these packets will be compressed
+  #Set to 0 to compress everything, -1 to disable.
+  batch-threshold: 256
+  #Compression level used when sending batched packets. Higher = more CPU, less bandwidth usage
+  compression-level: 6
+  #Use AsyncTasks for compression during the main game session. Increases latency, but may reduce main thread load
+  async-compression: false
+  #Threshold for async compression, in bytes. Only packets larger than this will be compressed asynchronously
+  #Due to large overhead of AsyncTask, async compression isn't worth it except for large packets
+  async-compression-threshold: 10000
+  #Experimental. Use UPnP to automatically port forward
+  upnp-forwarding: false
+  #Maximum size in bytes of packets sent over the network (default 1492 bytes). Packets larger than this will be
+  #fragmented or split into smaller parts. Clients can request MTU sizes up to but not more than this number.
+  max-mtu-size: 1492
+  #Maximum number of fragments a single incoming packet may be split into. A client on a low MTU link splits the same
+  #payload into far more parts, so this is not a size limit; raise it if legitimate players are dropped with
+  #"received packet split into more parts than allowed". Worst-case reassembly memory per session is roughly
+  #max-split-packet-parts * max-concurrent-split-packets * max-mtu-size.
+  max-split-packet-parts: 192
+  #Maximum number of split packets a single session may reassemble at once.
+  max-concurrent-split-packets: 4
+  #Enable encryption of Minecraft network traffic. This has an impact on performance, but prevents hackers from stealing sessions and pretending to be other players.
+  #DO NOT DISABLE THIS unless you understand the risks involved.
+  enable-encryption: true
+
+debug:
+  #If > 1, it will show debug messages in the console
+  level: 1
+
+player:
+  #Choose whether to enable player data saving.
+  save-player-data: true
+  #If true, checks that joining players' Xbox user ID (XUID) match what was previously recorded.
+  #This also prevents non-XBL players using XBL players' usernames to steal their data on servers with xbox-auth=off.
+  verify-xuid: true
+
+level-settings:
+  #The default format that worlds will use when created
+  default-format: leveldb
+
+chunk-sending:
+  #To change server normal render distance, change view-distance in server.properties.
+  #Amount of chunks sent to players per tick
+  per-tick: 4
+  #Radius of chunks that need to be sent before spawning the player
+  spawn-radius: 4
+
+chunk-ticking:
+  #Radius of chunks around a player to tick
+  tick-radius: 3
+  #Number of blocks inside ticking areas' subchunks that get ticked every tick. Higher values will accelerate events
+  #like tree and plant growth, but at a higher performance cost.
+  blocks-per-subchunk-per-tick: 3
+  #IDs of blocks not to perform random ticking on.
+  disable-block-ticking:
+    #- grass
+    #- ice
+    #- fire
+
+chunk-generation:
+  #Max. amount of chunks in the waiting queue to be populated
+  population-queue-size: 32
+
+ticks-per:
+  autosave: 6000
+
+auto-report:
+  #Send crash reports for processing
+  enabled: true
+  send-code: true
+  send-settings: true
+  send-phpinfo: false
+  use-https: true
+  host: crash.getaltay.org
+
+anonymous-statistics:
+  #Sends anonymous statistics to bStats for data aggregation
+  #https://bstats.org/plugin/server-implementation/Altay/34140
+  enabled: true
+
+auto-updater:
+  enabled: true
+  on-update:
+    warn-console: true
+  #Can be development, alpha, beta or stable.
+  preferred-channel: stable
+  #If using a development version, it will suggest changing the channel
+  suggest-channels: true
+  host: update.getaltay.org
+
+timings:
+  #Choose the host to use for viewing your timings results.
+  host: timings.getaltay.org
+
+console:
+  #Whether to accept commands via the console. If disabled, anything typed on the console will be ignored.
+  #Useful to save resources on headless servers where the console is never used (e.g. hosted server, Docker, etc.)
+  enable-input: true
+  #Choose whether to enable server stats reporting on the console title.
+  #NOTE: The title ticker will be disabled regardless if console colours are not enabled.
+  title-tick: true
+
+aliases:
+  ##This section allows you to add, remove or remap command aliases.
+  ##A single alias can call one or more other commands (or aliases).
+  ##Aliases defined here will override any command aliases declared by plugins or PocketMine-MP itself.
+
+  ##To remove an alias, set it to [], like so (note that prefixed aliases like "pocketmine:stop" will remain and can't
+  ##be removed):
+  #stop: []
+
+  ##Commands are not removed, only their aliases. You can still refer to a command using its full (prefixed)
+  ##name, even if all its aliases are overwritten. The full name is usually something like "pocketmine:commandname" or
+  ##"pluginname:commandname".
+  #abort: [pocketmine:stop]
+
+  ##To add an alias, list the command(s) that it calls:
+  #showtheversion: [version]
+  #savestop: [save-all, stop]
+
+  ##To invoke another command with arguments, use $1 to pass the first argument, $2 for the second etc:
+  #giveadmin: [op $1] ## `giveadmin alex` -> `op alex`
+  #kill: [suicide, say "I tried to kill $1"] ## `kill alex` -> `suicide` + `say "I tried to kill alex"`
+  #giverandom: [give $1 $2, say "Someone has just received a $2!"] ## `giverandom alex diamond` -> `give alex diamond` + `say "Someone has just received a diamond!"`
+
+  ##To make arguments mandatory (so that the command fails if they are not provided), use $$, e.g. $$1, $$2:
+  #makeadmin: [op $$1] ## `makeadmin alex` -> `op alex`, `makeadmin` with no arguments = error
+
+  ##To pass through a range of arguments, put a - (hyphen) after the index:
+  #tpalias: [tp $1-] ## `tpalias 256 70 256` -> `tp 256 70 256` - this passes arguments 1 and everything after it to the `tp` command
+
+  ##To change an existing command alias and make it do something else:
+  #tp: [suicide]
+
+worlds:
+  #These settings will override the generator set in server.properties and allows loading multiple worlds
+  #Example:
+  #world:
+  # seed: 404
+  # generator: FLAT
+  # preset: 2;bedrock,59xstone,3xdirt,grass;1
+
+plugins:
+  #Setting this to true will cause the legacy structure to be used where plugin data is placed inside the --plugins dir.
+  #False will place plugin data under plugin_data under --data.
+  #This option exists for backwards compatibility with existing installations.
+  legacy-data-dir: false
