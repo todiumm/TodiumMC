@@ -840,7 +840,27 @@ final class Interpreter{
 			$arguments[] = $this->evaluate($argument, $scope);
 		}
 
+		if(!$callee instanceof JsFunction && !$callee instanceof Closure){
+			throw new JsThrow("TypeError: " . self::describeCallee($calleeNode) . " is not a function");
+		}
+
 		return $this->callValue($callee, $arguments, $thisBinding);
+	}
+
+	/**
+	 * Renders a callee expression ("world.foo", "bar") for error messages.
+	 */
+	private static function describeCallee(Node $node) : string{
+		if($node->kind === "identifier"){
+			return $node->stringField("name");
+		}
+		if($node->kind === "member"){
+			$object = $node->child("object");
+			$property = $node->child("property");
+			$key = $property !== null && !$node->boolField("computed") ? $property->stringField("value") : "[computed]";
+			return ($object !== null ? self::describeCallee($object) : "?") . "." . $key;
+		}
+		return "expression";
 	}
 
 	/**
@@ -925,7 +945,7 @@ final class Interpreter{
 		}
 
 		if(!$callee instanceof JsFunction){
-			throw new JsThrow("TypeError: value is not a constructor");
+			throw new JsThrow("TypeError: " . self::describeCallee($this->requireChild($node, "callee")) . " is not a constructor");
 		}
 
 		$instance = new JsObject();

@@ -69,6 +69,7 @@ use function json_decode;
 use function json_encode;
 use function microtime;
 use function preg_replace;
+use function str_ends_with;
 use function str_starts_with;
 use function strtolower;
 use function substr;
@@ -225,6 +226,11 @@ final class ScriptRuntime{
 		foreach($scriptPacks as $pack){
 			$prefix = $pack->getPackId();
 			foreach($pack->listFiles() as $relativePath){
+				//only script sources and JSON data are ever imported; skip textures, sounds, models and the like
+				$lower = strtolower($relativePath);
+				if(!str_ends_with($lower, ".js") && !str_ends_with($lower, ".mjs") && !str_ends_with($lower, ".json")){
+					continue;
+				}
 				$contents = $pack->readFile($relativePath);
 				if($contents === null){
 					continue;

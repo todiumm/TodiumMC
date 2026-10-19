@@ -61,7 +61,7 @@ final class ScriptHostPlugin extends PluginBase implements Listener{
 			new PluginDescription([
 				"name" => "TodiumScriptApi",
 				"version" => "1.0.0",
-				"main" => self::class,
+				"main" => "TodiumScriptApi\\Host", //must not start with "pocketmine\\" or PluginDescription rejects it
 				"api" => ["5.0.0"],
 				"description" => "Native Bedrock Script API runtime"
 			]),

@@ -31,6 +31,26 @@ namespace pocketmine\script\engine;
 final class JsThrow extends \Exception{
 
 	public function __construct(public readonly mixed $value){
-		parent::__construct("Uncaught JavaScript exception");
+		parent::__construct(self::describe($value));
+	}
+
+	/**
+	 * Builds a readable message from whatever the script threw, so the console shows the real cause instead of a
+	 * generic "Uncaught JavaScript exception".
+	 */
+	private static function describe(mixed $value) : string{
+		if($value instanceof JsObject){
+			$name = Interpreter::toString($value->get("name"));
+			$message = Interpreter::toString($value->get("message"));
+			if($message !== "undefined" && $message !== ""){
+				return ($name !== "undefined" && $name !== "" ? $name . ": " : "") . $message;
+			}
+			$stack = Interpreter::toString($value->get("stack"));
+			if($stack !== "undefined" && $stack !== ""){
+				return $stack;
+			}
+			return "Uncaught JavaScript exception (object)";
+		}
+		return "Uncaught " . Interpreter::toString($value);
 	}
 }

@@ -93,10 +93,10 @@ final class ServerApi{
 		$afterEvents = new JsObject();
 		$beforeEvents = new JsObject();
 
-		foreach(["worldLoad", "worldInitialize", "playerSpawn", "playerLeave", "entityDie", "entitySpawn", "entityHurt", "entityHitEntity", "blockBreak", "blockPlace", "itemUse", "scriptTick"] as $name){
+		foreach(["worldLoad", "worldInitialize", "playerSpawn", "playerLeave", "playerJoin", "playerDimensionChange", "playerGameModeChange", "playerBreakBlock", "playerPlaceBlock", "playerInteractWithBlock", "playerInteractWithEntity", "playerEmote", "playerInputModeChange", "playerInputPermissionCategoryChange", "entityDie", "entityRemove", "entitySpawn", "entityHurt", "entityHealthChanged", "entityHitEntity", "entityHitBlock", "entityLoad", "projectileHitBlock", "projectileHitEntity", "blockBreak", "blockPlace", "buttonPush", "leverAction", "pressurePlatePush", "pressurePlatePop", "targetBlockHit", "tripWireTrip", "explosion", "effectAdd", "weatherChange", "chatSend", "dataDrivenEntityTrigger", "entityEffectAdd", "itemUse", "itemUseOn", "itemStartUse", "itemStopUse", "itemReleaseUse", "itemCompleteUse", "itemStartUseOn", "itemStopUseOn", "pistonActivate", "scriptTick"] as $name){
 			$afterEvents->set($name, $this->createSignal($name, false));
 		}
-		foreach(["chatSend", "entityHurt", "playerInteractWithBlock", "itemUse"] as $name){
+		foreach(["chatSend", "entityHurt", "entityRemove", "playerInteractWithBlock", "playerInteractWithEntity", "playerBreakBlock", "playerPlaceBlock", "playerLeave", "playerGameModeChange", "itemUse", "itemUseOn", "explosion", "effectAdd", "weatherChange", "dataDrivenEntityTrigger", "pistonActivate"] as $name){
 			$beforeEvents->set($name, $this->createSignal($name, true));
 		}
 

@@ -36,16 +36,21 @@ use function copy;
 use function count;
 use function file_exists;
 use function gettype;
+use function implode;
+use function in_array;
 use function is_array;
 use function is_dir;
 use function is_float;
 use function is_int;
 use function is_string;
 use function mkdir;
+use function pathinfo;
 use function rtrim;
+use function scandir;
 use function strlen;
 use function strtolower;
 use const DIRECTORY_SEPARATOR;
+use const PATHINFO_EXTENSION;
 
 /**
  * Loads and keeps track of the behaviour packs available on the server.
@@ -114,44 +119,81 @@ class BehaviorPackManager{
 				$logger->critical("Found invalid entry in behaviour pack list at offset $pos of type " . gettype($pack));
 				continue;
 			}
-			$pack = (string) $pack;
-			try{
-				$newPack = $this->loadPackFromPath(Path::join($this->path, $pack));
+			$this->registerPackFromName((string) $pack, $logger);
+		}
 
-				$index = strtolower($newPack->getPackId());
-				if(!Uuid::isValid($index)){
-					throw new BehaviorPackException("Invalid UUID ($index)");
-				}
-				if(isset($this->uuidList[$index])){
-					throw new BehaviorPackException("Another behaviour pack with the same UUID is already loaded");
-				}
-
-				$this->uuidList[$index] = $newPack;
-				$this->behaviorPacks[] = $newPack;
-
-				$keyPath = Path::join($this->path, $pack . ".key");
-				if(file_exists($keyPath)){
-					try{
-						$key = Filesystem::fileGetContents($keyPath);
-					}catch(\RuntimeException $e){
-						throw new BehaviorPackException("Could not read encryption key file: " . $e->getMessage(), 0, $e);
-					}
-					$key = rtrim($key, "\r\n");
-					if(strlen($key) !== 32){
-						throw new BehaviorPackException("Invalid encryption key length, must be exactly 32 bytes");
-					}
-					$this->encryptionKeys[$index] = $key;
-				}
-
-				if($newPack->hasScripts()){
-					$logger->info("Behaviour pack \"" . $newPack->getPackName() . "\" provides " . count($newPack->getScriptEntries()) . " script module(s)");
-				}
-			}catch(BehaviorPackException $e){
-				$logger->critical("Could not load behaviour pack \"$pack\": " . $e->getMessage());
+		//auto-discover packs dropped in the folder but missing from behavior_packs.yml
+		$listed = [];
+		foreach($stack as $entry){
+			if(is_string($entry) || is_int($entry) || is_float($entry)){
+				$listed[(string) $entry] = true;
+			}
+		}
+		$discovered = scandir($this->path);
+		foreach($discovered === false ? [] : $discovered as $name){
+			if($name === "." || $name === ".." || $name[0] === "." || isset($listed[$name])){
+				continue;
+			}
+			$full = Path::join($this->path, $name);
+			$extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+			if(!is_dir($full) && !in_array($extension, ["zip", "mcpack", "mcaddon"], true)){
+				continue; //behavior_packs.yml, .key files, etc.
+			}
+			if($this->registerPackFromName($name, $logger)){
+				$logger->info("Auto-discovered behaviour pack \"$name\" (add it to behavior_packs.yml to control its order)");
 			}
 		}
 
 		$logger->debug("Successfully loaded " . count($this->behaviorPacks) . " behaviour packs");
+	}
+
+	/**
+	 * Loads one pack from the packs folder and registers it, logging (not throwing) on failure.
+	 *
+	 * @return bool whether the pack was registered
+	 */
+	private function registerPackFromName(string $pack, \Logger $logger) : bool{
+		try{
+			$newPack = $this->loadPackFromPath(Path::join($this->path, $pack));
+
+			$index = strtolower($newPack->getPackId());
+			if(!Uuid::isValid($index)){
+				throw new BehaviorPackException("Invalid UUID ($index)");
+			}
+			if(isset($this->uuidList[$index])){
+				throw new BehaviorPackException("Another behaviour pack with the same UUID is already loaded");
+			}
+
+			$keyPath = Path::join($this->path, $pack . ".key");
+			$key = null;
+			if(file_exists($keyPath)){
+				try{
+					$key = Filesystem::fileGetContents($keyPath);
+				}catch(\RuntimeException $e){
+					throw new BehaviorPackException("Could not read encryption key file: " . $e->getMessage(), 0, $e);
+				}
+				$key = rtrim($key, "\r\n");
+				if(strlen($key) !== 32){
+					throw new BehaviorPackException("Invalid encryption key length, must be exactly 32 bytes");
+				}
+			}
+
+			//only register once every check passed, so a broken pack never half-loads
+			$this->uuidList[$index] = $newPack;
+			$this->behaviorPacks[] = $newPack;
+			if($key !== null){
+				$this->encryptionKeys[$index] = $key;
+			}
+
+			$logger->info("Loaded behaviour pack \"" . $newPack->getPackName() . "\" (" . $newPack->getPackId() . ")");
+			if($newPack->hasScripts()){
+				$logger->info("Behaviour pack \"" . $newPack->getPackName() . "\" provides " . count($newPack->getScriptEntries()) . " script module(s): " . implode(", ", $newPack->getScriptEntries()));
+			}
+			return true;
+		}catch(BehaviorPackException $e){
+			$logger->critical("Could not load behaviour pack \"$pack\": " . $e->getMessage());
+			return false;
+		}
 	}
 
 	private function loadPackFromPath(string $packPath) : BehaviorPack{

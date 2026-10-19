@@ -75,7 +75,13 @@ final class ModuleLoader{
 
 		$path = self::resolve($specifier, $importer);
 		if(!array_key_exists($path, $this->sources)){
-			throw new ScriptEngineException("Cannot find module \"" . $specifier . "\"");
+			//imports may omit the extension or point at a folder, so try the usual candidates
+			foreach(self::candidatePaths($path) as $candidate){
+				if(array_key_exists($candidate, $this->sources)){
+					return $this->loadPath($candidate);
+				}
+			}
+			throw new ScriptEngineException("Cannot find module \"" . $specifier . "\" (imported from \"" . $importer . "\")");
 		}
 		return $this->loadPath($path);
 	}
